@@ -388,4 +388,4 @@ class DetectorApp:
 if __name__ == "__main__":
     root = tk.Tk()
     app = DetectorApp(root)
-    root.mainloop()
+    root.mainloop() 
