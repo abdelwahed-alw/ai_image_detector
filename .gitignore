@@ -1,0 +1,19 @@
+# Rust compilation files
+target/
+Cargo.lock
+
+# Python virtual environment & cache
+venv/
+__pycache__/
+get-pip.py
+
+# Security / Secrets (VERY IMPORTANT)
+secrets.py
+
+# Optional: Ignore test images
+*.png
+*.jpg
+*.jpeg
+
+# OS generated files
+.DS_Store
