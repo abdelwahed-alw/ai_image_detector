@@ -1,3 +1,4 @@
+from PIL import Image, ExifTags
 import tkinter as tk
 from tkinter import filedialog
 import subprocess
@@ -231,13 +232,38 @@ class DetectorApp:
         self.log("Initiating Gemini Deep Contextual Scan...", "accent")
         try:
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-pro')
+            model = genai.GenerativeModel('gemini-2.5-flash')
             img = Image.open(img_path)
             
-            prompt = """
+            # --- NEW: Extract EXIF Metadata (Camera Info) ---
+            exif_report = "No EXIF Metadata found."
+            try:
+                exif_data = img._getexif()
+                if exif_data:
+                    extracted = []
+                    for tag_id, value in exif_data.items():
+                        tag = ExifTags.TAGS.get(tag_id, tag_id)
+                        # We only want useful forensic tags
+                        if tag in ['Make', 'Model', 'Software', 'DateTimeOriginal']:
+                            extracted.append(f"{tag}: {value}")
+                    if extracted:
+                        exif_report = " | ".join(extracted)
+            except Exception:
+                exif_report = "Error reading EXIF data."
+            
+            self.log(f"Extracted Metadata: {exif_report}", "warn")
+            # ------------------------------------------------
+
+            # --- NEW: Updated Forensic Prompt ---
+            prompt = f"""
             You are an expert digital forensic analyst. Examine the attached image carefully.
-            1. Analyze the physical lighting, shadows, textures, and biological/architectural consistency for any AI-generated artifacts.
-            2. Use your internal knowledge to determine if this image is known to be AI-generated or if it belongs to a real context.
+            
+            1. FILE METADATA: {exif_report}
+            (Note: If metadata is empty, the image is highly suspicious. Real photos usually have Camera Make/Model. AI generators strip this data or list AI software).
+            
+            2. VISUAL ANALYSIS: Analyze physical lighting, shadows, and textures.
+            WARNING: DO NOT trust watermarks or logos (e.g., National Geographic, Getty Images). Modern AI easily fakes watermarks. Base your verdict purely on metadata, anatomy, and physics.
+            
             3. Give me a final verdict exactly like this on the first line: 'VERDICT: FAKE' or 'VERDICT: REAL'.
             4. Provide a brief, concise explanation (max 3 sentences) starting on the next line.
             """
