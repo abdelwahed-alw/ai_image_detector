@@ -11,7 +11,7 @@ from PIL import Image, ExifTags
 RUST_BINARY = os.path.join(os.getcwd(), "target/release/ai_image_detector")
 CONFIG_FILE = 'config.json'
 
-# --- Color Palette ---
+
 BG_DARK    = "#05080F" 
 BG_PANEL   = "#0D1421"
 BG_CARD    = "#151F32"
@@ -76,7 +76,6 @@ class ScannerCanvas(tk.Canvas):
             y1 = cy + r * math.sin(math.radians(a_deg))
             self.create_line(cx, cy, x1, y1, fill=ACCENT, width=2, tags="sweep")
             
-            # تأثير الذيل المضيء للرادار
             for trail in range(1, 30):
                 ta = a_deg - trail * 3
                 alpha_hex = format(max(0, 255 - trail * 9), '02x')
@@ -180,7 +179,6 @@ class DetectorApp:
         self.verdict_label = tk.Label(self.verdict_frame, text="AWAITING ANALYSIS", font=("Courier", 18, "bold"), fg=TEXT_DIM, bg=BG_DARK)
         self.verdict_label.place(relx=0.5, rely=0.5, anchor="center")
         
-        # --- Log Terminal ---
         log_outer = tk.Frame(self.root, bg=BG_CARD, highlightbackground=GRID_LINE, highlightthickness=1)
         log_outer.place(x=20, y=550, width=580, height=190)
         tk.Label(log_outer, text="TERMINAL LOG", font=("Courier", 8, "bold"), fg=TEXT_DIM, bg=BG_CARD).place(x=10, y=5)
@@ -188,7 +186,6 @@ class DetectorApp:
                                 selectbackground=ACCENT2, bd=0, padx=10, pady=4, wrap=tk.WORD, state="disabled")
         self.log_text.place(x=0, y=25, width=580, height=160)
         
-        # Text Tags for Colors
         self.log_text.tag_configure("info",    foreground=TEXT_MID)
         self.log_text.tag_configure("success", foreground=SUCCESS)
         self.log_text.tag_configure("error",   foreground=DANGER)
@@ -206,6 +203,7 @@ class DetectorApp:
         settings_win = tk.Toplevel(self.root)
         settings_win.title("API SETTINGS")
         settings_win.geometry("460x200")
+        
         settings_win.configure(bg=BG_DARK)
         settings_win.resizable(False, False)
         settings_win.transient(self.root)
@@ -282,7 +280,6 @@ class DetectorApp:
             model = genai.GenerativeModel('gemini-2.5-flash')
             img = Image.open(img_path)
             
-            # استخراج بيانات الكاميرا EXIF
             exif_report = "No EXIF Metadata found (Common in screenshots, web downloads, or AI)."
             try:
                 exif_data = img._getexif()
@@ -324,7 +321,7 @@ class DetectorApp:
             text = response.text.strip()
             
             verdict = "INCONCLUSIVE"
-            if "VERDICT: FAKE" in text.upper()[:15]: # فحص السطر الأول فقط
+            if "VERDICT: FAKE" in text.upper()[:15]:
                 verdict = "FAKE"
             elif "VERDICT: REAL" in text.upper()[:15]:
                 verdict = "REAL"
@@ -364,7 +361,6 @@ class DetectorApp:
                         rust_verdict = "REAL"
                         self.log(f"Status: REAL (Natural noise, Diff={diff:.2f})")
 
-            # استدعاء الذكاء الاصطناعي مع تمرير بيانات محرك الرياضيات
             gemini_verdict, explanation = self._run_gemini_analysis(img_path, rust_verdict, diff)
             
             final_verdict = rust_verdict
@@ -372,10 +368,8 @@ class DetectorApp:
                 self.log("--- AI FORENSIC REPORT ---", "warn")
                 for line in explanation.split('\n'):
                     if line.strip():
-                        # لون التقرير بناءً على قرار الذكاء الاصطناعي النهائي
                         self.log(line.strip(), "success" if gemini_verdict=="REAL" else "error")
                 
-                # تحديث القرار النهائي بالقرار الذي اتخذه الذكاء الاصطناعي (احتمال النقض)
                 if gemini_verdict in ["REAL", "FAKE"]:
                     final_verdict = gemini_verdict
 
@@ -391,11 +385,11 @@ class DetectorApp:
         self.scanner.stop_scan(result=verdict if verdict in ("REAL","FAKE") else None)
         label_map = {
             "REAL":  "✓ AUTHENTIC IMAGE",
-            "FAKE":  "✕ AI GENERATED",
+              "FAKE":  "✕ AI GENERATED",
             "ERROR": "⚠ ANALYSIS FAILED",
         }
         self.root.after(0, lambda: self._set_verdict(
-            label_map.get(verdict, verdict), color))
+               label_map.get(verdict, verdict), color))
         self.root.after(0, lambda: self._set_status(
             "COMPLETE" if verdict != "ERROR" else "ERROR", color))
 
